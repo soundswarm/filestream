@@ -1,6 +1,7 @@
 const testFolder = './logFiles';
-const fsPromise = require('fs-promise')
-const fs = require ('fs')
+const fsPromise = require('fs-promise');
+const fs = require ('fs');
+const Heap = require('heap');
 
 // read file names from directory
 const readFiles = (files)=>{
@@ -47,6 +48,12 @@ const readLine = (fileDir, startLine, key)=>{
 }
 
 const startProcess = ()=>{
+
+  // a heap to store the logs that have been ready from files before theyre printed to the console
+  const heap = new Heap((a,b)=>{
+    return a.log.time - b.log.time
+  })
+
   const startTime = Date.now() // used to determin run time of process
   readFiles(testFolder)
   .then(files=>{
@@ -63,8 +70,6 @@ const startProcess = ()=>{
     })
 
     const fileDirs = files.map(file=> `./logFiles/${file}`);
-    const _2117 = 78099676155333360000; //a date far in the future
-    let minTime = {key: null, time:_2117};
 
     const rec = ()=>{
       const promiseArray = Object.keys(stateMap).map(key=>{
@@ -85,26 +90,24 @@ const startProcess = ()=>{
               }
             } else {
               const key = updatedLog.key;
+              
               stateMap[key].log = updatedLog.log;
               stateMap[key].startLine = updatedLog.newStartLine;
+              
+              // add log to min heap
+              heap.push(stateMap[key])
             }
           }
         })
 
-        Object.keys(stateMap).forEach(key=>{
-          if(stateMap[key].log.time < minTime.time) {
-            minTime.key = key;
-            minTime.time = stateMap[key].log.time;
-          }
-        })
         if(Object.keys(stateMap).length === 0) {
           console.log('timeElapsed', Date.now() - startTime)
           console.log('done');
           return
         }
-        console.log('resultlog',stateMap[minTime.key].log, minTime.key)
-        stateMap[minTime.key].log.time = null;
-        minTime.time = _2117;
+        const logToPrint = heap.pop()
+        console.log('resultlog',logToPrint.log)
+        logToPrint.log.time = null;
         return rec()
       })
       .catch(err=> console.log(err))
@@ -117,10 +120,11 @@ startProcess()
 const createTestFiles = ()=>{
   for(let fileNum = 0; fileNum < 10; fileNum++) {
     let wstream = fs.createWriteStream(`./logFiles/log${fileNum}.txt`)
-    for(let i = 0; i<100; i++) {
+    for(let i = 0; i<1000; i++) {
       let obj = `{"time":${i}, "message":"file${fileNum}_${i.toString()}"}\n`
       wstream.write(obj)
     } 
   }
 }
+// createTestFiles()
 
