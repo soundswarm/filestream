@@ -47,6 +47,7 @@ const readLine = (fileDir, startLine, key)=>{
 }
 
 const startProcess = ()=>{
+  const startTime = Date.now() // used to determin run time of process
   readFiles(testFolder)
   .then(files=>{
     let stateMap = {}; //this holds the minimum time from each file that has not been printed to console
@@ -97,6 +98,7 @@ const startProcess = ()=>{
           }
         })
         if(Object.keys(stateMap).length === 0) {
+          console.log('timeElapsed', Date.now() - startTime)
           console.log('done');
           return
         }
